@@ -8,17 +8,20 @@ fi
 
 source /etc/os-release
 
-if command -v apt >/dev/null; then
-  apt update -y
-  apt install -y curl openssl jq
-elif command -v dnf >/dev/null; then
-  dnf install -y curl openssl jq
-elif command -v yum >/dev/null; then
-  yum install -y curl openssl jq
-else
-  echo "Unsupported Linux distribution"
-  exit 1
-fi
+# install dependencies by distro
+case "$ID" in
+ ubuntu|debian)
+   apt update -y
+   apt install -y curl openssl jq
+   ;;
+ almalinux|rocky|centos|rhel|fedora)
+   dnf install -y curl openssl jq || yum install -y curl openssl jq
+   ;;
+ *)
+   echo "Unsupported Linux: $ID"
+   exit 1
+   ;;
+esac
 
 # install xray
 bash <(curl -Ls https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
@@ -44,7 +47,6 @@ cat > /usr/local/etc/xray/config.json <<EOF
 }
 EOF
 
-# firewall support
 if command -v firewall-cmd >/dev/null; then
  firewall-cmd --permanent --add-port=443/tcp || true
  firewall-cmd --reload || true
